@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "796869892588",
+    "project_id": "authmailpassword",
+    "storage_bucket": "authmailpassword.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:796869892588:android:93cea391e4bf8ad0d388c9",
+        "android_client_info": {
+          "package_name": "com.example.webdiary"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "796869892588-3dvv2supmr4kn5o134b7urqidi84amr3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD4juGhlCtTw6XFTTbfb-tBCKBWhY8tguY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "796869892588-3dvv2supmr4kn5o134b7urqidi84amr3.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "796869892588-c1nhvqsugpvpqfkvffnpgumpun501mi2.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.webdiary"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
