@@ -80,7 +80,6 @@ class DiaryListView extends StatelessWidget {
                                       style:
                                           Theme.of(context).textTheme.bodyText2,
                                     ),
-                                    Text('${filteredDiaryList.length}'),
                                     TextButton.icon(
                                       icon: Icon(Icons.lock_outline_sharp),
                                       label: Text(

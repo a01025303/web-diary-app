@@ -211,11 +211,11 @@ class _MainPageState extends State<MyMainPage> {
                             size: 40,
                             color: Colors.purple,
                           ),
-                          label: Expanded(
+                          label: Container(
                             child: Padding(
                               padding: const EdgeInsets.all(8.0),
                               child: Text(
-                                'Write New',
+                                'Escribir entrada',
                                 style: TextStyle(fontSize: 17),
                               ),
                             ),
