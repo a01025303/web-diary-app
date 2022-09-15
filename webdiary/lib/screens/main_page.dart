@@ -2,9 +2,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
+import 'package:webdiary/get_started_page.dart';
 import 'package:webdiary/models/user.dart';
 import 'package:webdiary/screens/login_page.dart';
+
+import '../models/diary.dart';
+import '../services/service.dart';
+import '../widgets/diary_list_view.dart';
+import '../widgets/inner_list_card.dart';
+import '../widgets/write_diary_dialog.dart';
 
 // Stateful widget --> main page
 class MyMainPage extends StatefulWidget {
@@ -20,6 +28,8 @@ class _MainPageState extends State<MyMainPage> {
   String? _dropDownText;
   User? user = FirebaseAuth.instance.currentUser;
   UserModel loggedUser = UserModel();
+  DateTime selectedDate = DateTime.now();
+  var userDiaryFilteredEntriesList;
 
   @override
   void initState() {
@@ -36,41 +46,37 @@ class _MainPageState extends State<MyMainPage> {
 
   @override
   Widget build(BuildContext context) {
+    TextEditingController _titleTextController = TextEditingController();
+    TextEditingController _descriptionTextController = TextEditingController();
+    var _listOfDiaries = Provider.of<List<Diary>>(context);
+    var _user = Provider.of<User?>(context);
+    var latestFilteredDiariesStream;
+    var earliestFilteredDiariesStream;
+    CollectionReference bookCollectionReference =
+        FirebaseFirestore.instance.collection('diaries');
     // Use scaffold to define structure
     return Scaffold(
-      // Create app bar
       appBar: AppBar(
-        // Background color for the bar
         backgroundColor: Colors.grey.shade100,
-        // Set height of toolbar
         toolbarHeight: 100,
-        // Set elevation of the toolbar
         elevation: 4,
-        // Set row
         title: Row(
           children: [
-            // Text for bar
             Text(
-              // Determine text and its attributes
               'Diary',
               style: TextStyle(fontSize: 39, color: Colors.blueGrey.shade400),
             ),
             Text(
-              // Determine text and its attributes
               'Book',
               style: TextStyle(fontSize: 39, color: Colors.purple),
             )
           ],
         ),
-        // Actions within bar
         actions: [
           Row(
-            // Define dropdown bar
             children: [
               Padding(
-                // Determine padding
                 padding: const EdgeInsets.all(8.0),
-                // Determine child --> map list values for dropdown menu
                 child: DropdownButton<String>(
                   items: <String>['Latest', 'Earliest'].map((String value) {
                     return DropdownMenuItem<String>(
@@ -80,112 +86,186 @@ class _MainPageState extends State<MyMainPage> {
                           style: TextStyle(color: Colors.grey),
                         ));
                   }).toList(),
-                  // Determine what to display
                   hint: (_dropDownText == null)
                       ? Text('Select')
                       : Text(_dropDownText!),
-                  // Set states for dropDownText depending on value
                   onChanged: (value) {
                     if (value == 'Latest') {
                       setState(() {
                         _dropDownText = value;
                       });
+                      _listOfDiaries.clear();
+                      latestFilteredDiariesStream =
+                          DiaryService().getLatestDiaries(_user!.uid());
+                      latestFilteredDiariesStream.then((value) {
+                        for (var item in value) {
+                          setState(() {
+                            _listOfDiaries.add(item);
+                          });
+                        }
+                      });
                     } else if (value == 'Earliest') {
                       setState(() {
                         _dropDownText = value;
+                      });
+                      _listOfDiaries.clear();
+                      earliestFilteredDiariesStream =
+                          DiaryService().getEarliestDiaries(_user!.uid());
+
+                      earliestFilteredDiariesStream.then((value) {
+                        for (var item in value) {
+                          setState(() {
+                            _listOfDiaries.add(item);
+                          });
+                        }
                       });
                     }
                   },
                 ),
               ),
-              //TODO: create profile
-              // Container for profile
-              Container(
-                child: Row(
-                  children: [
-                    Column(
-                      children: [
-                        Expanded(
-                            child: InkWell(
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            // Show image in circle - stablish characteristics
-                            child: CircleAvatar(
-                              radius: 30,
-                              backgroundImage:
-                                  NetworkImage('https://picsum.photos/200/300'),
-                              backgroundColor: Colors.transparent,
-                            ),
-                          ),
-                        )),
-                        // Text for profile
-                        Text(
-                          "${loggedUser.firstName}",
-                          style: TextStyle(color: Colors.grey),
-                        )
-                      ],
+              Column(
+                children: [
+                  Expanded(
+                      child: InkWell(
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      // Show image in circle - stablish characteristics
+                      child: CircleAvatar(
+                        radius: 30,
+                        backgroundImage:
+                            NetworkImage('https://picsum.photos/200/300'),
+                        backgroundColor: Colors.transparent,
+                      ),
                     ),
-                    // Button to log out
-                    IconButton(
-                        onPressed: () {
-                          logout(context);
-                        },
-                        icon: Icon(
-                          Icons.logout_outlined,
-                          size: 19,
-                          color: Colors.red,
-                        ))
-                  ],
-                ),
-              )
+                  )),
+                  // Text for profile
+                  Text(
+                    "${loggedUser.firstName}",
+                    style: TextStyle(color: Colors.grey),
+                  )
+                ],
+              ),
+              // Button to log out
+              IconButton(
+                  onPressed: () {
+                    FirebaseAuth.instance.signOut().then((value) {
+                      return Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MyLoginPage(),
+                          ));
+                    });
+                  },
+                  icon: Icon(
+                    Icons.logout_outlined,
+                    size: 19,
+                    color: Colors.red,
+                  )),
             ],
-          )
+          ),
         ],
       ),
-      // Define body structure
       body: Row(
         children: [
           Expanded(
-              // Left box --> will contain calendar
-              flex: 2,
+              flex: 4,
               child: Container(
-                // Container style
                 height: MediaQuery.of(context).size.height,
                 decoration: BoxDecoration(
                     shape: BoxShape.rectangle,
                     border: Border(
                         right: BorderSide(width: 0.4, color: Colors.blueGrey))),
-                // Column
+                // color: Colors.green,
                 child: Column(
                   children: [
-                    // Insert calendar using Date Picker
                     Padding(
                       padding: const EdgeInsets.all(38.0),
                       child: SfDateRangePicker(
-                          //onSelectionChanged:
-                          //(dateRangePickerSelectionChangedArgs) {
-                          // print(dateRangePickerSelectionChangedArgs.value)
-                          //.toString();
-                          // },
+                        onSelectionChanged: (dateRangePickerSelection) {
+                          setState(() {
+                            selectedDate = dateRangePickerSelection.value;
+                            _listOfDiaries.clear();
+                            userDiaryFilteredEntriesList = DiaryService()
+                                .getSameDateDiaries(
+                                    Timestamp.fromDate(selectedDate).toDate(),
+                                    FirebaseAuth.instance.currentUser!.uid());
+
+                            userDiaryFilteredEntriesList.then((value) {
+                              for (var item in value) {
+                                setState(() {
+                                  _listOfDiaries.add(item);
+                                });
+                              }
+                            });
+                          });
+                        },
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(48.0),
+                      child: Card(
+                        elevation: 4,
+                        child: TextButton.icon(
+                          icon: Icon(
+                            Icons.add,
+                            size: 40,
+                            color: Colors.purple,
                           ),
+                          label: Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Text(
+                                'Write New',
+                                style: TextStyle(fontSize: 17),
+                              ),
+                            ),
+                          ),
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                return WriteDiaryDialog(
+                                    selectedDate: selectedDate,
+                                    titleTextController: _titleTextController,
+                                    descriptionTextController:
+                                        _descriptionTextController);
+                              },
+                            );
+                          },
+                        ),
+                      ),
                     )
                   ],
                 ),
               )),
           Expanded(
-              flex: 3,
-              child: Container(
-                color: Colors.white,
-                child: Column(),
-              ))
+              flex: 10,
+              child: DiaryListView(
+                  listOfDiaries: _listOfDiaries, selectedDate: selectedDate)),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (context) {
+                return WriteDiaryDialog(
+                    selectedDate: selectedDate,
+                    titleTextController: _titleTextController,
+                    descriptionTextController: _descriptionTextController);
+              },
+            );
+          },
+          tooltip: 'Add',
+          child: Icon(
+            Icons.add,
+          )),
     );
   }
 
   void logout(BuildContext context) async {
     await FirebaseAuth.instance.signOut();
     Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => MyLoginPage()));
+        MaterialPageRoute(builder: (context) => GettingStartedPage()));
   }
 }
